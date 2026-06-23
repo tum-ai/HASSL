@@ -1,3 +1,6 @@
+import logging
+import os
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -6,10 +9,11 @@ from tqdm import tqdm
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-from distinctipy import get_colors, get_colormap
+from matplotlib.colors import ListedColormap, BoundaryNorm
+
 from torchvision.transforms import functional as TF
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+logger = logging.getLogger("dinov3")
 def make_robust_collate_fn(target_size: int = 224):
     """
     Collate that:
@@ -63,7 +67,6 @@ def make_robust_collate_fn(target_size: int = 224):
 
     return collate_fn
 
-from torchvision.transforms import functional as TF
 from torch.utils.data import Subset
 
 def _unwrap_dataset(ds):
@@ -108,7 +111,7 @@ def extract_embeddings(
         model = model.eval().to(device)
         all_emb, all_labels = [], []
 
-        print("Starting embedding extraction. Batches:", len(loader))
+        logger.info("Starting embedding extraction. Batches: %d", len(loader))
         with torch.inference_mode():
             for batch in tqdm(loader, desc="batches"):
                 imgs = batch["image"].to(device, non_blocking=True)
@@ -157,12 +160,6 @@ def compute_tsne_and_plot(embeddings, labels, out_path="tsne.png",
     max_legend : int, max number of labels to show in legend (for readability)
     base_cmap_name : str, base cmap to sample for discrete colors (e.g., 'hsv', 'gist_ncar')
     """
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import ListedColormap, BoundaryNorm
-    from sklearn.decomposition import PCA
-    from sklearn.manifold import TSNE
-
     embeddings = np.asarray(embeddings)
     n, d = embeddings.shape
 
@@ -220,6 +217,6 @@ def compute_tsne_and_plot(embeddings, labels, out_path="tsne.png",
     plt.axis("off")
     plt.tight_layout()
     plt.savefig(out_path, dpi=200)
-    print("Saved TSNE to", out_path)
+    logger.info("Saved t-SNE plot to %s", out_path)
 
     return emb2

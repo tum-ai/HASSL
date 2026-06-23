@@ -1,9 +1,14 @@
+import logging
+from pathlib import Path
+
+import torch
+
 from dinov3.configs import DinoV3SetupArgs, get_cfg_from_args, apply_scaling_rules_to_cfg
 import dinov3.distributed as distributed
 from dinov3.train import SSLMetaArch
 from dinov3.checkpointer import find_latest_checkpoint, load_checkpoint
-from pathlib import Path
-import torch
+
+logger = logging.getLogger("dinov3")
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -30,8 +35,8 @@ def load_backbone(
     cfg = get_cfg_from_args(args, strict=False)
     apply_scaling_rules_to_cfg(cfg)
     model = SSLMetaArch(cfg)
-    print("Materializing model parameters on", DEVICE)
-    model = model.to_empty(device=DEVICE) 
+    logger.info("Materializing model parameters on %s", DEVICE)
+    model = model.to_empty(device=DEVICE)
     ckpt_dir = Path(cfg.train.output_dir, "ckpt").expanduser()
     last_checkpoint_dir = find_latest_checkpoint(ckpt_dir)
     process_subgroup = distributed.get_process_subgroup()
@@ -45,8 +50,8 @@ def load_backbone(
         )
         + 1
     )
-    print(f"Model loaded on {start_iter} start iteration")
+    logger.info("Model loaded from checkpoint at iteration %d", start_iter)
     embedding_model = model.student.backbone
     embedding_model.eval()
-    print("Model backbone architecture: \n", embedding_model)
+    logger.info("Model backbone architecture:\n%s", embedding_model)
     return embedding_model

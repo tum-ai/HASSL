@@ -79,11 +79,12 @@ Create a `manifest_train.csv.gz` file with the following columns:
 | Column      | Description                     |
 |-------------|---------------------------------|
 | `img_path`  | Path to the cell image          |
-| `mask_path` | Path to the corresponding mask  |
-| `cell_name` | Cell type or class label        |
+| `mask_dir`  | Path to the corresponding mask  |
+| `origin`    | Dataset label                   |
+| `stem`      | Unique id for each row                  |
 | `h`         | Height of the image in pixels   |
 | `w`         | Width of the image in pixels    |
-| `a`         | Area of the image in pixels     |
+| `area`         | Area of the image in pixels     |
 
 Reference manifests are provided at `manifest_train_fixed.csv.gz` and `manifest_test_fixed.csv.gz`.
 

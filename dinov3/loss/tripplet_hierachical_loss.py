@@ -3,9 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional, Sequence, Any
 import numpy as np
-import os
 import logging
-import torch
 
 logger = logging.getLogger("dinov3.triplet")
 
@@ -16,12 +14,6 @@ def minmax_scale(x, eps=1e-8):
         return t  # empty -> empty
     mn, mx = t.min(), t.max()
     return (t - mn) / (mx - mn + eps)
-
-def softmax_weights(x, tau=0.5, eps=1e-6):
-    if x.numel() == 0:
-        return x
-    x = (x - x.mean()) / (x.std(unbiased=False) + eps)
-    return F.softmax(x / tau, dim=0)
 
 
 class TripletHCentroidLoss(nn.Module):
@@ -110,35 +102,6 @@ class TripletHCentroidLoss(nn.Module):
         else:
             logger.debug("[TripletH] lambda stats: no lambda values present")
 
-        # ---- Global min/max for lambda (positives) and neg_lambda (negatives) ----
-        '''all_pos_lams = []
-        all_neg_lams = []
-        for idx in local_indices_list:
-            all_pos_lams.extend(lambdas[idx] if idx < len(lambdas) else [])
-            if neg_lambdas is not None and idx < len(neg_lambdas):
-                all_neg_lams.extend(neg_lambdas[idx])
-
-        # positives
-        if len(all_pos_lams) == 0:
-            pos_min, pos_max = 0.0, 1.0
-        else:
-            pos_min = float(np.min(all_pos_lams))
-            pos_max = float(np.max(all_pos_lams))
-            if abs(pos_max - pos_min) < 1e-12:
-                pos_max = pos_min + 1.0
-
-        # negatives
-        if len(all_neg_lams) == 0:
-            neg_min, neg_max = 0.0, 1.0
-        else:
-            neg_min = float(np.min(all_neg_lams))
-            neg_max = float(np.max(all_neg_lams))
-            if abs(neg_max - neg_min) < 1e-12:
-                neg_max = neg_min + 1.0
-        pos_min_t = torch.tensor(pos_min, device=device, dtype=anchors.dtype)
-        pos_max_t = torch.tensor(pos_max, device=device, dtype=anchors.dtype)
-        neg_min_t = torch.tensor(neg_min, device=device, dtype=anchors.dtype)
-        neg_max_t = torch.tensor(neg_max, device=device, dtype=anchors.dtype)'''
         losses = []
         valid_flags = []
 
@@ -173,28 +136,8 @@ class TripletHCentroidLoss(nn.Module):
                         [torch.as_tensor(n, dtype=anchors.dtype, device=device) for n in neg_list], dim=0
                     )
 
-            
-            # CONTRASTIVE LOSS JR - https://qdrant.tech/articles/triplet-loss/
-
-            #LOCAL SCALING OF LAMBDAS
-
             lambda_scaled = minmax_scale(lambda_list).to(device=device, dtype=anchors.dtype)
             neg_lambda_scaled = minmax_scale(neg_lambda_list).to(device=device, dtype=anchors.dtype)
-
-            #lambda_t     = torch.as_tensor(lambda_list,     device=device, dtype=anchors.dtype)[:pos_tensor.size(0)]
-            #neg_lambda_t = torch.as_tensor(neg_lambda_list, device=device, dtype=anchors.dtype)[:neg_tensor.size(0)]
-            
-            #w_pos = softmax_weights(lambda_t)         # sums to 1
-            #w_neg = softmax_weights(neg_lambda_t)
-
-            #GLOBAL SCALING START OF LAMBDAS
-
-            #lambda_t      = torch.as_tensor(lambda_list,      device=device, dtype=anchors.dtype)
-            #neg_lambda_t  = torch.as_tensor(neg_lambda_list,  device=device, dtype=anchors.dtype)
-
-            #lambda_scaled     = (lambda_t     - pos_min_t) / (pos_max_t - pos_min_t + 1e-8)
-            #neg_lambda_scaled = (neg_lambda_t - neg_min_t) / (neg_max_t - neg_min_t + 1e-8)
-
 
             anchor = F.normalize(anchors[idx_in_batch].float(), p=2, dim=0)   # (D,)
             pos_tensor = F.normalize(pos_tensor.float(),              p=2, dim=1) # (P,D)
@@ -205,125 +148,18 @@ class TripletHCentroidLoss(nn.Module):
             for i in range(pos_tensor.size(0)):
                 # scalar squared L2 to the i-th positive
                 d2 = (pos_tensor[i] - anchor).pow(2).sum()                        # scalar
-                positive_sum = positive_sum + d2 * lambda_scaled[i]#    NO LAMBDA          # stays scalar
+                positive_sum = positive_sum + d2 * lambda_scaled[i]
 
             # --- NEGATIVE SUM (scalar) ---
             negative_sum = anchor.new_tensor(0.0, dtype=torch.float32)
             for i in range(neg_tensor.size(0)):
                 # scalar L2 to the i-th negative (unit sphere: max dist ≈ 2)
-                d = (neg_tensor[i] - anchor).pow(2).sum().sqrt()                  # scalar
-                neg_term = (2 - d).clamp(min=0.0).pow(2) # scalar
-                negative_sum = negative_sum + neg_term * neg_lambda_scaled[i]#)   NO LAMBDA                        # stays scalar
+                d = (neg_tensor[i] - anchor).pow(2).sum().sqrt()
+                neg_term = (2 - d).clamp(min=0.0).pow(2)
+                negative_sum = negative_sum + neg_term * neg_lambda_scaled[i]
 
-            '''
-            # Normalize
-            pos_tensor = F.normalize(pos_tensor, p=2, dim=1)
-            neg_tensor = F.normalize(neg_tensor, p=2, dim=1)
-            anchor = anchors[idx_in_batch].unsqueeze(1)  # (D, 1)
-
-            sim_pos = (pos_tensor @ anchor).squeeze(1)  # (P,)
-            sim_neg = (neg_tensor @ anchor).squeeze(1)  # (Nneg,)
-
-            # weights from lambda_list
-            if len(lambda_list) == 0:
-                pos_w = torch.ones((sim_pos.shape[0],), dtype=anchors.dtype, device=device)
-            else:
-                pos_w = torch.tensor(lambda_list, dtype=anchors.dtype, device=device)
-                if self.lambda_scaling == "local":
-                    if pos_w.numel() == 0:
-                        pos_w = torch.ones_like(pos_w)
-                    else:
-                        wmin = float(pos_w.min().detach().cpu().item())
-                        wmax = float(pos_w.max().detach().cpu().item())
-                        if abs(wmax - wmin) < 1e-12:
-                            pos_w = torch.ones_like(pos_w)
-                        else:
-                            pos_w = ((pos_w - wmin) / (wmax - wmin)).clamp(min=self.eps)
-                elif self.lambda_scaling == "global":
-                    pos_w = ((pos_w - global_min) / (global_max - global_min)).clamp(min=self.eps)
-                else:
-                    pos_w = pos_w.clamp(min=self.eps)
-
-            # negative weighting heuristics / from provided negative lambdas
-            if self.negative_weighting == "uniform":
-                neg_w = torch.ones_like(sim_neg)
-            elif self.negative_weighting == "inverse_pos":
-                inv = 1.0 / (1.0 + float(pos_w.mean().detach().cpu().item()))
-                neg_w = torch.full_like(sim_neg, fill_value=inv)
-            elif self.negative_weighting == "based_on_pos":
-                tau = 0.1
-                scaled = sim_neg / tau
-                neg_w = torch.softmax(scaled, dim=0)
-            else:  # lambda_mean
-                if len(neg_lambda_list) == 0:
-                    neg_w = torch.ones_like(sim_neg)
-                else:
-                    try:
-                        neg_w = torch.tensor(neg_lambda_list, dtype=anchors.dtype, device=device)
-                    except Exception:
-                        neg_w = torch.stack(
-                            [torch.as_tensor(v, dtype=anchors.dtype, device=device) for v in neg_lambda_list], dim=0
-                        )
-                    neg_w = neg_w.clamp(min=self.eps)
-
-            # selection
-            if self.weighting_mode == "none":
-                sim_ap = sim_pos.min()
-                if self.negative_weighting == "uniform":
-                    # Use all negatives with uniform weight (mean over negatives)
-                    sim_an = sim_neg.mean()
-                elif self.negative_weighting == "lambda_mean":
-                    # Weighted mean with provided negative lambdas (defaults to ones)
-                    neg_w_norm = neg_w / (neg_w.sum() + self.eps)
-                    sim_an = (sim_neg * neg_w_norm).sum()
-                else:
-                    sim_an = sim_neg.max()
-            elif self.weighting_mode == "weighted_mean":
-                pos_w_norm = pos_w / (pos_w.sum() + self.eps)
-                sim_ap = (sim_pos * pos_w_norm).sum()
-                if self.negative_weighting == "uniform":
-                    # Use all negatives with uniform weight (mean over negatives)
-                    sim_an = sim_neg.mean()
-                elif self.negative_weighting == "lambda_mean":
-                    # Weighted mean with provided negative lambdas (defaults to ones)
-                    neg_w_norm = neg_w / (neg_w.sum() + self.eps)
-                    sim_an = (sim_neg * neg_w_norm).sum()
-                else:
-                    sim_an = (sim_neg * neg_w).max()
-            elif self.weighting_mode == "weighted_minmax":
-                adj_pos = sim_pos / (pos_w + self.eps)
-                sim_ap = adj_pos.min()
-                if self.negative_weighting == "uniform":
-                    # Use all negatives with uniform weight (mean over negatives)
-                    sim_an = sim_neg.mean()
-                elif self.negative_weighting == "lambda_mean":
-                    # Weighted mean with provided negative lambdas (defaults to ones)
-                    neg_w_norm = neg_w / (neg_w.sum() + self.eps)
-                    sim_an = (sim_neg * neg_w_norm).sum()
-                else:
-                    sim_an = (sim_neg * neg_w).max()
-            else:
-                sim_ap = sim_pos.min()
-                if self.negative_weighting == "uniform":
-                    # Use all negatives with uniform weight (mean over negatives)
-                    sim_an = sim_neg.mean()
-                elif self.negative_weighting == "lambda_mean":
-                    # Weighted mean with provided negative lambdas (defaults to ones)
-                    neg_w_norm = neg_w / (neg_w.sum() + self.eps)
-                    sim_an = (sim_neg * neg_w_norm).sum()
-                else:
-                    sim_an = sim_neg.max()'''
-
-            #raw = (sim_an - sim_ap + float(margin)).clamp(min=0.0)
-            #print(f'positive_sum {positive_sum}')
-            #print(f'negative_sum {negative_sum}')
-
-
-            # combine (optionally average by counts)
+            # combine (average by counts)
             raw = positive_sum / max(1, pos_tensor.size(0)) + negative_sum / max(1, neg_tensor.size(0))
-            print(f'Positive sum: {positive_sum}')
-            print(f'Negative sum: {negative_sum}')
-            print(f'Raw: {raw}')
             losses.append(raw)
             valid_flags.append(True)
 

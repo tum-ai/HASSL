@@ -26,7 +26,6 @@ from dinov3.checkpointer import (
     load_checkpoint,
     register_dont_save_hooks,
     save_checkpoint,
-    init_fsdp_model_from_checkpoint,
 )
 from dinov3.configs import setup_config, setup_job, setup_multidistillation
 from dinov3.data import (
@@ -37,7 +36,7 @@ from dinov3.data import (
     make_dataset,
     CombinedDataLoader,
 )
-from dinov3.data.datasets import ImageNet
+
 from dinov3.logging import MetricLogger, setup_logging
 from dinov3.train.cosine_lr_scheduler import CosineScheduler, linear_warmup_cosine_decay
 from dinov3.train.multidist_meta_arch import MultiDistillationMetaArch
@@ -45,8 +44,7 @@ from dinov3.train.ssl_meta_arch import SSLMetaArch
 
 assert torch.__version__ >= (2, 1)
 torch.backends.cuda.matmul.allow_tf32 = True  # pytorch 1.12 sets this to false by default
-torch.backends.cudnn.benchmark = False  # True
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+torch.backends.cudnn.benchmark = False
 
 
 logger = logging.getLogger("dinov3")
@@ -241,7 +239,7 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
             param_group["lr"] = lr * lr_multiplier
 
 
-def do_test(cfg, model, iteration, process_group, do_low_freq=False):
+def do_test(cfg, model, iteration, process_group):
     # dump a sharded checkpoint
     eval_dir = Path(cfg.train.output_dir) / "eval" / str(iteration)
     if distributed.is_subgroup_main_process():
@@ -552,7 +550,6 @@ def do_train(cfg, model, resume=False):
 
             # Forward backward
             optimizer.zero_grad(set_to_none=True)
-            # TODO: Here we need the clustering
             total_loss, metrics_dict, loss_dict = model.forward_backward(data, teacher_temp=teacher_temp, iteration=it)
 
             # Gradient clipping
@@ -631,7 +628,6 @@ def do_train(cfg, model, resume=False):
                 "dino_global_crops_loss": loss_dict["dino_global_crops_loss"],
                 "koleo_loss": loss_dict["koleo_loss"],
                 "ibot_loss": loss_dict["ibot_loss"],
-                #"gram_loss": loss_dict["gram_loss"],
                 "triplet_loss": loss_dict["triplet_loss"],
                 "triplet/valid_anchors": loss_dict["triplet/valid_anchors"],
                 "triplet/anchor_grad_norm": _anchor_grad,
@@ -647,7 +643,6 @@ def do_train(cfg, model, resume=False):
             # Submit evaluation jobs
             if (
                 cfg.evaluation.eval_period_iterations > 0 and (iteration + 1) % cfg.evaluation.eval_period_iterations == 0
-                # and iteration != max_iter - 1
             ):
                 do_test(cfg, model, f"training_{iteration}", process_group=process_subgroup)
                 torch.cuda.synchronize()
@@ -688,7 +683,7 @@ def main(argv=None):
         args = get_args_parser().parse_args(argv[1:])
         args.output_dir = sys.argv[1]
     if args.multi_distillation:
-        print("performing multidistillation run")
+        logger.info("Performing multi-distillation run")
         cfg = setup_multidistillation(args)
         torch.distributed.barrier()
         logger.info("setup_multidistillation done")

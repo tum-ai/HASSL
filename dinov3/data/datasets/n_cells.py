@@ -1,4 +1,3 @@
-import json
 import os
 import random
 import torch
@@ -13,8 +12,12 @@ import platform
 import gzip
 import csv
 
+import logging
+
 from .decoders import NCellDecoder, TargetDecoder
 from .extended import ExtendedVisionDataset
+
+logger = logging.getLogger("dinov3")
 
 _ALL_DATASETS = [
     "N_BCCD",
@@ -25,6 +28,10 @@ _ALL_DATASETS = [
 ]
 
 _PER_DATASET_LIMITS = {k: -1 for k in _ALL_DATASETS}
+
+# Minimum cell image area in pixels (20×18 px = 360 px²); images smaller than
+# this are typically artefacts or empty crops and are excluded from training.
+_MIN_IMAGE_AREA = 20 * 18
 
 # ------------------------- low-level utils -------------------------
 
@@ -255,10 +262,10 @@ class NCells(ExtendedVisionDataset):
         self._rng = random.Random(42)
 
         if self.split == NCells.Split.TEST:
-            flag = self.root.lower().__contains__("test")
-            print("Setup test NCells dataset. Check if the test .csv.gz is provided as manifest file")
+            flag = "test" in self.root.lower()
+            logger.info("Setup test NCells dataset. Ensure the test .csv.gz is provided as the manifest file.")
             if not flag:
-                print(f"Warning: Manifest file path does not contain test flag")
+                logger.warning("Manifest file path does not contain 'test': %s", self.root)
 
         allowed = _ALL_DATASETS
 
@@ -271,7 +278,7 @@ class NCells(ExtendedVisionDataset):
                 if allowed is not None and origin not in allowed:
                     continue
                 area = int(r["area"]) if r["area"] else 0
-                if area < 20*18:
+                if area < _MIN_IMAGE_AREA:
                     continue
                 rows.append((
                     r["img_path"],
