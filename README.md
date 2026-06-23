@@ -74,7 +74,65 @@ export WANDB_TAGS="dinov3,hdbscan,finetuning"   # optional
 
 ### Step 2 — Prepare the Training Manifest
 
-Create a `manifest_train.csv.gz` file with the following columns:
+**Option A — Use our dataset.**
+We provide pre-built manifests for our training and evaluation sets. Download the dataset and manifests:
+
+| File | Description | Download |
+|------|-------------|----------|
+| Cell image dataset | All `.npy` cell images used for training and evaluation | [link] |
+| `manifest_train_fixed.csv.gz` | Training manifest (included in repo) | — |
+| `manifest_test_fixed.csv.gz` | Evaluation manifest (included in repo) | — |
+
+After downloading the dataset, update the `img_path` and `mask_dir` columns in the manifests to reflect the location of the dataset on your machine:
+
+```python
+import gzip, csv, io
+
+OLD_PREFIX = "path_to_dataset/"   # placeholder in the provided manifests
+NEW_PREFIX = "/your/local/path/to/dataset/"
+
+for fname in ["manifest_train_fixed.csv.gz", "manifest_test_fixed.csv.gz"]:
+    with gzip.open(fname, "rt", newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+    for row in rows:
+        for col in ("img_path", "mask_dir"):
+            if col in row:
+                row[col] = row[col].replace(OLD_PREFIX, NEW_PREFIX)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)
+    with gzip.open(fname, "wt", newline="") as f:
+        f.write(buf.getvalue())
+```
+
+**Option B — Bring your own dataset.**
+If you are training on a custom cell image collection, generate the manifest using `build_manifest_csv()` provided in `dinov3/data/datasets/n_cells.py`:
+
+```python
+from dinov3.data.datasets.n_cells import build_manifest_csv
+
+build_manifest_csv(
+    root="/path/to/your/dataset/root",
+    split="train",
+    out_csv_gz="manifest_train.csv.gz",
+)
+```
+
+The dataset root must follow this directory structure:
+
+```
+<root>/
+  <origin>/          # e.g. N_PanNuke, N_MoNuSeg, …
+    <split>/         # train / val / test
+      [<label>/]     # optional label sub-directories
+        original/    # cell images as .npy files  (H × W × 3, uint8 or float32)
+        mask/        # binary instance masks as .npy files
+```
+
+The manifest is a gzip-compressed CSV with the following schema:
 
 | Column       | Description                                       |
 |--------------|---------------------------------------------------|
@@ -87,8 +145,6 @@ Create a `manifest_train.csv.gz` file with the following columns:
 | `h`          | Height of the image in pixels                     |
 | `w`          | Width of the image in pixels                      |
 | `area`       | Area of the image in pixels (`h × w`)             |
-
-Reference manifests are provided at `manifest_train_fixed.csv.gz` and `manifest_test_fixed.csv.gz`.
 
 ### Step 3 — Register Cell Classes
 
