@@ -3,21 +3,24 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.11
-  - omegaconf
+  - python=3.10
   - pip
   - pip:
-    - ftfy # needed for dino.txt
-    - iopath
-    - omegaconf
-    - pandas 
-    - regex # needed for dino.txt
-    - pandas
-    - scikit-learn
-    - scikit-learn-intelex
-    - submitit
-    - termcolor
-    - torch 
-    - torchvision 
-    - torchmetrics
-    
+    - cloudpickle==3.1.2
+    - ftfy==6.3.1
+    - hdbscan==0.8.41
+    - matplotlib==3.10.8
+    - numpy==2.2.6
+    - omegaconf==2.3.0
+    - pandas==2.3.3
+    - pillow==12.1.1
+    - regex==2026.2.28
+    - scikit-learn==1.7.2
+    - scipy==1.15.3
+    - submitit==1.5.4
+    - termcolor==3.3.0
+    - torch==2.10.0
+    - torchmetrics==1.8.2
+    - torchvision==0.25.0
+    - tqdm==4.67.3
+    - wandb==0.25.0
