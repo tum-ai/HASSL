@@ -20,7 +20,6 @@ Together, these two components push the embedding space toward a structure that 
   <thead>
     <tr>
       <th>Model</th>
-      <th>Backbone</th>
       <th>Description</th>
       <th>Download</th>
     </tr>
@@ -28,13 +27,11 @@ Together, these two components push the embedding space toward a structure that 
   <tbody>
     <tr>
       <td>Double Teacher</td>
-      <td>ViT-L/16</td>
       <td>Pretrained with segmentation distillation teacher</td>
       <td align="center">[link]</td>
     </tr>
     <tr>
       <td>HDBSCAN Fine-tuned</td>
-      <td>ViT-L/16</td>
       <td>Fine-tuned on top of Double Teacher with hierarchy-aware contrastive loss</td>
       <td align="center">[link]</td>
     </tr>
