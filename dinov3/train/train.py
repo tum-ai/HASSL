@@ -490,10 +490,12 @@ def do_train(cfg, model, resume=False):
         start_iter=loaded_iter,
     )
     # Setup wandb
+    _wandb_tags_str = os.environ.get("WANDB_TAGS", "")
+    _wandb_tags = [t.strip() for t in _wandb_tags_str.split(",") if t.strip()] or None
     with wandb.init(
-        entity="anirudh027-ludwig-maximilianuniversity-of-munich",
-        project="dinov3-double-teacher",
-        tags=["dinov3", "finetuning", "hdbscan", "neglambdas-10"]
+        entity=os.environ.get("WANDB_ENTITY"),
+        project=os.environ.get("WANDB_PROJECT", "dinov3-cell"),
+        tags=_wandb_tags,
     ) as run:
         # Metric logging
         logger.info("Starting training from iteration %d", start_iter)
