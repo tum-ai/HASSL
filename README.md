@@ -19,7 +19,7 @@ Together, these two components push the embedding space toward a structure that 
 
 
 <p align="center">
-  <img src="assets/fig2.png" width="90%" alt="Figure 2: HASSL training pipeline overview"/>
+  <img src="assets/fig2.png" width="100%" alt="Figure 2: HASSL training pipeline overview"/>
   <br>
   <em>Figure 2: Overview of the HASSL training pipeline. (1) Zero-shot segmentation maps are generated per cell. (2) A student ViT is trained via double-teacher distillation from a global image teacher and a segmentation teacher. (3) HDBSCAN derives a cluster hierarchy from batch embeddings; stability-λ-weighted prototypes define positive and negative pairs. (4) The resulting latent space organises cells into superclusters with clearer morphology-driven subclusters.</em>
 </p>
