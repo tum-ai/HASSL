@@ -51,6 +51,11 @@ Together, these two components push the embedding space toward a structure that 
 </table>
 
 ---
+## Dataset
+
+The dataset can be downloaded [here](https://huggingface.co/datasets/tum-ai/HASSL-SingleCellBench)
+
+---
 
 ## Installation
 
