@@ -372,7 +372,7 @@
     Learning morphologically grounded, hierarchically consistent cell embeddings — without any labels.
   </p>
   <div class="links">
-    <a href="#" class="btn btn-primary">
+    <a href="https://arxiv.org/abs/2607.04353" class="btn btn-primary">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
       Paper
     </a>
@@ -405,7 +405,7 @@
       <div class="author"><a href="https://orcid.org/0000-0003-3621-3481">Giacomo Masserdotti</a><span class="affil-num">4</span></div>
       <div class="author"><a href="https://scholar.google.com/citations?user=qbX8sKwAAAAJ&hl=en">Thorben Prein</a><span class="affil-num">1,3</span></div>
       <div class="author"><a href="https://scholar.google.com/citations?user=Wg9zjqEAAAAJ&hl=en">Carsten Marr</a><span class="equal">*</span><span class="affil-num">5,6,7,8,9</span></div>
-      <div class="author"><a href="https://scholar.google.com/citations?user=55umfgIAAAAJ&hl=en">Amirhossein Kardoost</a><span class="equal">*</span><span class="affil-num">5</span></div>
+      <div class="author"><a href="https://scholar.google.com/citations?user=55umfgIAAAAJ&hl=en">Amirhossein Kardoost</a><span class="equal">*</span><span class="affil-num">5,9</span></div>
     </div>
     <p class="equal-note"><span style="color:#fbbf24;">&dagger;</span> Equal contribution &nbsp;&nbsp; <span style="color:#fbbf24;">*</span> Corresponding authors: {carsten.marr, amirhossein.kardoost}@helmholtz-munich.de</p>
     <div class="affiliations">
@@ -644,11 +644,12 @@
     <p>If you find this work useful, please consider citing:</p>
     <div class="bibtex" id="bib-block">
       <button class="copy-btn" onclick="copyBib()">Copy</button>
-<span class="brace">@inproceedings{</span><span class="value">hassl2026</span><span class="brace">,</span>
+<span class="brace">@article{</span><span class="value">riel2026hassl</span><span class="brace">,</span>
   <span class="key">title</span>     = <span class="brace">{</span><span class="value">HASSL: Hierarchy-Aware Self-Supervised Learning Framework for Single Cell Microscopy</span><span class="brace">},</span>
-  <span class="key">author</span>    = <span class="brace">{},</span>
-  <span class="key">booktitle</span> = <span class="brace">{</span><span class="value">European Conference on Computer Vision (ECCV)</span><span class="brace">},</span>
+  <span class="key">author</span>    = <span class="brace">{</span><span class="value">Julius Riel and Vishwa Mohan Singh and Sai Anirudh Aryasomayajula and Anuun Chinbat and Hannes Leonhard and Moritz Ladenburger and Frederik Alexander and Vishisht Choudhary and Fabio Laredo and Giacomo Masserdotti and Thorben Prein and Carsten Marr and Amirhossein Kardoost</span><span class="brace">},</span>
+  <span class="key">journal</span>   = <span class="brace">{</span><span class="value">arXiv preprint arXiv:2607.04353</span><span class="brace">},</span>
   <span class="key">year</span>      = <span class="brace">{</span><span class="value">2026</span><span class="brace">},</span>
+  <span class="key">url</span>       = <span class="brace">{</span><span class="value">https://arxiv.org/abs/2607.04353</span><span class="brace">},</span>
 <span class="brace">}</span>
     </div>
   </div>
@@ -662,11 +663,12 @@
 
 <script>
   function copyBib() {
-    const text = `@inproceedings{hassl2026,
+    const text = `@article{riel2026hassl,
   title     = {HASSL: Hierarchy-Aware Self-Supervised Learning Framework for Single Cell Microscopy},
-  author    = {},
-  booktitle = {European Conference on Computer Vision (ECCV)},
+  author    = {Julius Riel and Vishwa Mohan Singh and Sai Anirudh Aryasomayajula and Anuun Chinbat and Hannes Leonhard and Moritz Ladenburger and Frederik Alexander and Vishisht Choudhary and Fabio Laredo and Giacomo Masserdotti and Thorben Prein and Carsten Marr and Amirhossein Kardoost},
+  journal   = {arXiv preprint arXiv:2607.04353},
   year      = {2026},
+  url       = {https://arxiv.org/abs/2607.04353},
 }`;
     navigator.clipboard.writeText(text).then(() => {
       const btn = document.querySelector('.copy-btn');
