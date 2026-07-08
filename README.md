@@ -25,32 +25,6 @@ Together, these two components push the embedding space toward a structure that 
 </p>
 
 ---
-
-## Pretrained Checkpoints
-
-<table style="margin: auto">
-  <thead>
-    <tr>
-      <th>Model</th>
-      <th>Description</th>
-      <th>Download</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Double Teacher</td>
-      <td>Pretrained with segmentation distillation teacher</td>
-      <td align="center">[link]</td>
-    </tr>
-    <tr>
-      <td>HDBSCAN Fine-tuned</td>
-      <td>Fine-tuned on top of Double Teacher with hierarchy-aware contrastive loss</td>
-      <td align="center">[link]</td>
-    </tr>
-  </tbody>
-</table>
-
----
 ## Dataset
 
 The dataset can be downloaded [here](https://huggingface.co/datasets/tum-ai/HASSL-SingleCellBench)
@@ -93,7 +67,7 @@ We provide pre-built manifests for our training and evaluation sets. Download th
 
 | File | Description | Download |
 |------|-------------|----------|
-| Cell image dataset | All `.npy` cell images used for training and evaluation | [link] |
+| Cell image dataset | All `.npy` cell images used for training and evaluation | [link](https://huggingface.co/datasets/tum-ai/HASSL-SingleCellBench) |
 | `manifest_train_fixed.csv.gz` | Training manifest (included in repo) | — |
 | `manifest_test_fixed.csv.gz` | Evaluation manifest (included in repo) | — |
 
